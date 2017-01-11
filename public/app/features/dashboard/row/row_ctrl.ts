@@ -8,40 +8,118 @@ import {coreModule, appEvents} from 'app/core/core';
 import './options';
 import './add_panel';
 import {DashboardRow} from './row_model';
+import angular from 'angular';
 
 export class DashRowCtrl {
   dashboard: any;
   row: any;
   dropView: number;
+  dashboards: any;
+  showDupRow: number;
 
   /** @ngInject */
-  constructor(private $scope, private $rootScope, private $timeout) {
+  constructor(private $http, private $scope, private $rootScope, private $timeout, private backendSrv,) {
     this.row.title = this.row.title || 'Row title';
+
+    this.showDupRow = 0;
 
     if (this.row.isNew) {
       this.dropView = 1;
     }
+    this.backendSrv.search().then((results) => {
+      this.dashboards = results;
+    });
+  }
+  hideDupSubMenu(){
+    var self = this;
+    this.$timeout(function() {
+      self.showDupRow = 0;
+    }, 500);
+  }
+  showDupSubMenu(){
+    this.showDupRow = 1;
+  }
+  saveRowToDashboard(dash) {
+    this.backendSrv.post('/api/dashboards/db/', {dashboard: dash}).then((results) => {
+      this.$rootScope.appEvent('alert-success', ['Copy Row', 'Success']);
+    });
+  }
+  copyRowtoDashboard(dash) {
+
+    this.backendSrv.get('/api/dashboards/'+dash.uri).then((results) => {
+      var dashboard = results.dashboard;
+      var newRow = {
+        collapse : this.row.collapse,
+        height : this.row.height,
+        panels : [],
+        repeat : this.row.repeat,
+        repeatIteration : this.row.repeatIteration,
+        repeatRowId : this.row.repeatRowId,
+        showTitle : this.row.showTitle,
+        title : this.row.title,
+        titleSize : this.row.titleSize,
+      };
+      var i, j, row, panel, max = 0;
+      for (i = 0; i < dashboard.rows.length; i++) {
+        row = dashboard.rows[i];
+        for (j = 0; j < row.panels.length; j++) {
+          panel = row.panels[j];
+          if (panel.id > max) { max = panel.id; }
+        }
+      }
+      var newPanelId = max + 1;
+      for ( var cnt in this.row.panels ) {
+        var panel = this.row.panels[cnt];
+        var newPanel = angular.copy(panel);
+        newPanel.id = newPanelId;
+        delete newPanel.repeat;
+        delete newPanel.repeatIteration;
+        delete newPanel.repeatPanelId;
+        delete newPanel.scopedVars;
+        delete newPanel.alert;
+        newRow.panels.push(newPanel);
+        newPanelId++;
+      }
+      dashboard.rows.push(newRow);
+      this.saveRowToDashboard(dashboard);
+    });
   }
 
   duplicateRow() {
+    console.log(this.dashboard);
     var defaults = {
       title: this.row.title,
-      isNew: false
+      showTitle: this.row.showTitle,
+      titleSize: this.row.titleSize,
+      isNew: false,
+      span: this.row.span,
+      height: this.row.height,
+      collapse: this.row.collapse
     };
     var newRow = new DashboardRow(defaults);
     this.dashboard.rows.push(newRow);
     for ( var i in this.row.panels ) {
       var panel = this.row.panels[i];
-      var panelOptions = {
-        id: null,
-        title: panel.title,
-        span: panel.span,
-        type: panel.type,
-      };
+      var newPanel = angular.copy(panel);
+      newPanel.id = this.dashboard.getNextPanelId();
 
-      this.dashboard.addPanel(panelOptions, newRow);
-
+      delete newPanel.repeat;
+      delete newPanel.repeatIteration;
+      delete newPanel.repeatPanelId;
+      delete newPanel.scopedVars;
+      delete newPanel.alert;
+      newRow.addPanel(newPanel);
     };
+    var rowsList = this.dashboard.rows;
+    var rowIndex = _.indexOf(rowsList, this.row);
+    var newRowIndex = _.indexOf(rowsList, newRow);
+
+    var updateIndex = rowIndex + 1;
+
+    if (updateIndex >= 0 && updateIndex <= (rowsList.length - 1)) {
+      _.move(rowsList, newRowIndex, updateIndex);
+    }
+
   }
 
   onDrop(panelId, dropTarget) {
@@ -162,6 +240,8 @@ coreModule.directive('dashRow', function($rootScope) {
       $rootScope.onAppEvent('panel-fullscreen-exit', function() {
         element.show();
       }, scope);
+
+
     }
   };
 });

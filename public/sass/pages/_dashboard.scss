@@ -258,3 +258,40 @@ div.flot-text {
   }
 }
 
+ul.dash-row-menu li#duplicate-row {
+  float:none !important;
+  display:block !important;  
+  position:relative;
+  padding:0;
+  margin:0 !important;
+  
+  ul {
+    display:none;
+    position:absolute;
+    top:0;
+    left:100%;
+    background: #141414;
+    padding:0;
+    margin:0 !important;
+    list-style: none;
+    z-index:99;
+    li {
+      float:none !important;
+      a {
+        margin:0 !important;
+        display: block;
+        padding: 5px 10px;
+        white-space: nowrap;
+        font-size: 12px;
+        border:none !important;
+      }
+    }
+  }
+
+  &:hover > ul {
+    display:block !important;
+  }  
+}
+
+
+
