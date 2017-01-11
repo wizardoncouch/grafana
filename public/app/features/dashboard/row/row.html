@@ -25,10 +25,14 @@
         </a>
       </li>
       
-      <li ng-show="ctrl.dashboard.meta.canEdit">
-        <a ng-click="ctrl.duplicateRow()">
+      <li ng-show="ctrl.dashboard.meta.canEdit" id="duplicate-row">
+        <a href="">
           <i class="fa fa-plus-square-o"></i> Duplicate Row
         </a>
+        <ul>
+          <li><a href="" ng-click="ctrl.duplicateRow()">This Dashboard</a></li>
+          <li ng-repeat="row in ctrl.dashboards" ng-show="row.id != ctrl.dashboard.id"><a href="" ng-click="ctrl.copyRowtoDashboard(row)">{{row.title}}</a></li>
+        </ul>
       </li>
       <li ng-show="ctrl.dashboard.meta.canEdit">
         <a ng-click="ctrl.onMenuAddPanel()">
