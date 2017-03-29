@@ -35,6 +35,7 @@ const (
 
 var (
 	ErrCannotChangeStateOnPausedAlert error = fmt.Errorf("Cannot change state on pause alert")
+	ErrRequiresNewState               error = fmt.Errorf("update alert state requires a new state.")
 )
 
 func (s AlertStateType) IsValid() bool {
@@ -73,7 +74,6 @@ type Alert struct {
 	Frequency      int64
 
 	EvalData     *simplejson.Json
-	EvalDate     time.Time
 	NewStateDate time.Time
 	StateChanges int
 

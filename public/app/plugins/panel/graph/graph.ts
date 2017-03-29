@@ -17,8 +17,6 @@ import {appEvents, coreModule} from 'app/core/core';
 import GraphTooltip from './graph_tooltip';
 import {ThresholdManager} from './threshold_manager';
 
-var labelWidthCache = {};
-
 coreModule.directive('grafanaGraph', function($rootScope, timeSrv) {
   return {
     restrict: 'A',
@@ -119,16 +117,6 @@ coreModule.directive('grafanaGraph', function($rootScope, timeSrv) {
         }
       }
 
-      function getLabelWidth(text, elem) {
-        var labelWidth = labelWidthCache[text];
-
-        if (!labelWidth) {
-          labelWidth = labelWidthCache[text] = elem.width();
-        }
-
-        return labelWidth;
-      }
-
       function drawHook(plot) {
         // Update legend values
         var yaxis = plot.getYAxes();
@@ -156,8 +144,6 @@ coreModule.directive('grafanaGraph', function($rootScope, timeSrv) {
           var yaxisLabel = $("<div class='axisLabel left-yaxis-label flot-temp-elem'></div>")
           .text(panel.yaxes[0].label)
           .appendTo(elem);
-
-          yaxisLabel[0].style.marginTop = (getLabelWidth(panel.yaxes[0].label, yaxisLabel) / 2) + 'px';
         }
 
         // add right axis labels
@@ -165,8 +151,6 @@ coreModule.directive('grafanaGraph', function($rootScope, timeSrv) {
           var rightLabel = $("<div class='axisLabel right-yaxis-label flot-temp-elem'></div>")
           .text(panel.yaxes[1].label)
           .appendTo(elem);
-
-          rightLabel[0].style.marginTop = (getLabelWidth(panel.yaxes[1].label, rightLabel) / 2) + 'px';
         }
 
         thresholdManager.draw(plot);
@@ -269,6 +253,7 @@ coreModule.directive('grafanaGraph', function($rootScope, timeSrv) {
             backgroundColor: null,
             borderWidth: 0,
             hoverable: true,
+            clickable: true,
             color: '#c8c8c8',
             margin: { left: 0, right: 0 },
           },
@@ -475,7 +460,8 @@ coreModule.directive('grafanaGraph', function($rootScope, timeSrv) {
           show: panel.yaxes[0].show,
           index: 1,
           logBase: panel.yaxes[0].logBase || 1,
-          max: null
+          min: panel.yaxes[0].min ? _.toNumber(panel.yaxes[0].min) : null,
+          max: panel.yaxes[0].max ? _.toNumber(panel.yaxes[0].max) : null,
         };
 
         options.yaxes.push(defaults);
@@ -486,12 +472,13 @@ coreModule.directive('grafanaGraph', function($rootScope, timeSrv) {
           secondY.show = panel.yaxes[1].show;
           secondY.logBase = panel.yaxes[1].logBase || 1;
           secondY.position = 'right';
+          secondY.min = panel.yaxes[1].min ? _.toNumber(panel.yaxes[1].min) : null;
+          secondY.max = panel.yaxes[1].max ? _.toNumber(panel.yaxes[1].max) : null;
           options.yaxes.push(secondY);
 
           applyLogScale(options.yaxes[1], data);
           configureAxisMode(options.yaxes[1], panel.percentage && panel.stack ? "percent" : panel.yaxes[1].format);
         }
-
         applyLogScale(options.yaxes[0], data);
         configureAxisMode(options.yaxes[0], panel.percentage && panel.stack ? "percent" : panel.yaxes[0].format);
       }
@@ -500,43 +487,67 @@ coreModule.directive('grafanaGraph', function($rootScope, timeSrv) {
         if (axis.logBase === 1) {
           return;
         }
+        if (axis.min < Number.MIN_VALUE) {
+          axis.min = null;
+        }
+        if (axis.max < Number.MIN_VALUE) {
+          axis.max = null;
+        }
 
         var series, i;
-        var max = axis.max;
+        var max = axis.max, min = axis.min;
 
-        if (max === null) {
-          for (i = 0; i < data.length; i++) {
-            series = data[i];
-            if (series.yaxis === axis.index) {
-              if (max < series.stats.max) {
-                max = series.stats.max;
-              }
+        for (i = 0; i < data.length; i++) {
+          series = data[i];
+          if (series.yaxis === axis.index) {
+            if (!max || max < series.stats.max) {
+              max = series.stats.max;
+            }
+            if (!min || min > series.stats.logmin) {
+              min = series.stats.logmin;
             }
           }
-          if (max === void 0) {
-            max = Number.MAX_VALUE;
-          }
         }
 
-        axis.min = axis.min !== null ? axis.min : 0;
-        axis.ticks = [0, 1];
-        var nextTick = 1;
+        axis.transform = function(v) { return (v < Number.MIN_VALUE) ? null : Math.log(v) / Math.log(axis.logBase); };
+        axis.inverseTransform  = function (v) { return Math.pow(axis.logBase,v); };
 
-        while (true) {
-          nextTick = nextTick * axis.logBase;
-          axis.ticks.push(nextTick);
-          if (nextTick > max) {
-            break;
-          }
+        if (!max && !min) {
+          max = axis.inverseTransform(+2);
+          min = axis.inverseTransform(-2);
+        } else if (!max) {
+          max = min*axis.inverseTransform(+4);
+        } else if (!min) {
+          min = max*axis.inverseTransform(-4);
         }
 
-        if (axis.logBase === 10) {
-          axis.transform = function(v) { return Math.log(v+0.1); };
-          axis.inverseTransform  = function (v) { return Math.pow(10,v); };
+        if (axis.min) {
+          min = axis.inverseTransform(Math.ceil(axis.transform(axis.min)));
         } else {
-          axis.transform = function(v) { return Math.log(v+0.1) / Math.log(axis.logBase); };
-          axis.inverseTransform  = function (v) { return Math.pow(axis.logBase,v); };
+          min = axis.min = axis.inverseTransform(Math.floor(axis.transform(min)));
         }
+        if (axis.max) {
+          max = axis.inverseTransform(Math.floor(axis.transform(axis.max)));
+        } else {
+          max = axis.max = axis.inverseTransform(Math.ceil(axis.transform(max)));
+        }
+
+        if (!min || min < Number.MIN_VALUE || !max || max < Number.MIN_VALUE) {
+          return;
+        }
+
+        axis.ticks = [];
+        var nextTick;
+        for (nextTick = min; nextTick <= max; nextTick *= axis.logBase) {
+          axis.ticks.push(nextTick);
+        }
+        axis.tickDecimals = decimalPlaces(min);
+      }
+
+      function decimalPlaces(num) {
+        if (!num) { return 0; }
+
+        return (num.toString().split('.')[1] || []).length;
       }
 
       function configureAxisMode(axis, format) {
