@@ -46,6 +46,7 @@ export class PanelCtrl {
     this.events = new Emitter();
     this.timing = {};
     this.showSeries = false;
+    this.seriesValues = '30,14,7,4,3,2,1,0';
 
     var plugin = config.panels[this.panel.type];
     if (plugin) {
@@ -255,11 +256,29 @@ export class PanelCtrl {
   seriesPanel(){
     var series = this.seriesValues.split(',');
     for ( var i in series ){
-      this.panel.timeShift = series[i]+'d';
-      this.dashboard.duplicatePanel(this.panel, this.row);
-      this.$timeout(() => {
-        this.$scope.$root.$broadcast('render');
-      });
+        //if (parseInt(i) === 0){
+        //this.panel.timeShift = series[i]+'d';
+        //this.panel.title = '';
+        //console.log('let rendering begin.');
+        //console.log(this.panel);
+        //this.render();
+        //this.$timeout(() => {
+        //  this.$scope.$root.$broadcast('render');
+        //});
+      //}else{
+        var newPanel = this.panel;
+        if (parseInt(series[i]) === 0){
+          newPanel.timeShift = null;
+          newPanel.title = 'Current';
+        }else{
+          newPanel.timeShift = series[i]+'d';
+          newPanel.title = '';
+        }
+        this.dashboard.duplicatePanel(newPanel, this.row);
+        this.$timeout(() => {
+          this.$scope.$root.$broadcast('render');
+        });
+      //}
     }
   }
 
