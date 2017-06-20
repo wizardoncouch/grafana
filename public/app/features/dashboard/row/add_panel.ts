@@ -80,14 +80,12 @@ export class AddPanelCtrl {
   addPanel(panelPluginInfo) {
     var defaultSpan = 12;
     var span = 12 - this.row.span;
-
     var panel = {
       id: null,
       title: config.new_panel_title,
       span: span < defaultSpan && span > 0 ? span : defaultSpan,
-      type: panelPluginInfo.id,
+      type: panelPluginInfo.id
     };
-
     this.rowCtrl.closeDropView();
     this.dashboard.addPanel(panel, this.row);
     this.$timeout(() => {

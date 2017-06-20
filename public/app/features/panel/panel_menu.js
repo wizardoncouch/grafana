@@ -41,11 +41,27 @@ function (angular, $, _, Tether) {
             return;
           }
 
-          template += '<a class="panel-menu-link" ';
+          template += '<span style="position:relative;"><a class="panel-menu-link" ';
           if (item.click) { template += ' ng-click="' + item.click + '"'; }
           if (item.href) { template += ' href="' + item.href + '"'; }
           template += '>';
           template += item.text + '</a>';
+          if(item.text === 'Series'){
+            var series_backround = '#2d2d2d';
+            var series_border = '1px solid #141414';
+            template += '<span ng-show="this.showSeries"';
+            template += 'style="position:absolute;';
+            template += 'padding:4px;';
+            template += 'top:100%;';
+            template += 'right:0;';
+            template += 'margin-top:6px;';
+            template += 'backround:'+series_backround+';';
+            template += 'border:'+series_border+';">';
+            template += '<input type="text" style="padding:3px;" ng-model="ctrl.seriesValues" />';
+            template += '<button ng-click="ctrl.seriesPanel();dismiss();">OK</button>';
+            template += '</span>';
+          }
+          template += '</span>';
         });
 
         template += '</div>';

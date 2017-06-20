@@ -35,6 +35,8 @@ export class PanelCtrl {
   containerHeight: any;
   events: Emitter;
   timing: any;
+  showSeries: boolean;
+  seriesValues: any;
 
   constructor($scope, $injector) {
     this.$injector = $injector;
@@ -43,6 +45,7 @@ export class PanelCtrl {
     this.editorTabIndex = 0;
     this.events = new Emitter();
     this.timing = {};
+    this.showSeries = false;
 
     var plugin = config.panels[this.panel.type];
     if (plugin) {
@@ -60,6 +63,9 @@ export class PanelCtrl {
     // we should do something interesting
     // with newly added panels
     if (this.panel.isNew) {
+      if (this.panel.type === 'graph') {
+        console.log('wtf');
+      }
       delete this.panel.isNew;
     }
   }
@@ -146,6 +152,7 @@ export class PanelCtrl {
       menu.push({ text: 'Duplicate', click: 'ctrl.duplicate()', role: 'Editor' });
     }
     menu.push({text: 'Share', click: 'ctrl.sharePanel(); dismiss();'});
+    menu.push({text: 'Series', click: 'this.showSeries=true;'});
     return menu;
   }
 
@@ -243,6 +250,17 @@ export class PanelCtrl {
       src: 'public/app/features/dashboard/partials/shareModal.html',
       scope: shareScope
     });
+  }
+
+  seriesPanel(){
+    var series = this.seriesValues.split(',');
+    for ( var i in series ){
+      this.panel.timeShift = series[i]+'d';
+      this.dashboard.duplicatePanel(this.panel, this.row);
+      this.$timeout(() => {
+        this.$scope.$root.$broadcast('render');
+      });
+    }
   }
 
   getInfoMode() {
