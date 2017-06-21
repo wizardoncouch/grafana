@@ -64,9 +64,6 @@ export class PanelCtrl {
     // we should do something interesting
     // with newly added panels
     if (this.panel.isNew) {
-      if (this.panel.type === 'graph') {
-        console.log('wtf');
-      }
       delete this.panel.isNew;
     }
   }

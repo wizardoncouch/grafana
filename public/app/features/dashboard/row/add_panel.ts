@@ -93,6 +93,21 @@ export class AddPanelCtrl {
       //this.$rootScope.appEvent('panel-change-view', {
       //  fullscreen: true, edit: true, panelId: panel.id
       //});
+      if (panel.type === 'graph'){
+        var newPanel = this.dashboard.getPanelById(panel.id);
+        newPanel.yaxes[1].show = false;
+        newPanel.yaxes[0].format = 'none';
+        newPanel.decimals = 0;
+        newPanel.legend.alignAsTable = true;
+        newPanel.legend.rightSide = true;
+        newPanel.legend.total = true;
+        newPanel.legend.hideEmpty = true;
+        newPanel.legend.hideZero = true;
+        newPanel.nullPointMode = 'connected';
+        this.$timeout(() => {
+          this.$rootScope.$broadcast('render');
+        });
+      }
     });
   }
 }
