@@ -46,7 +46,7 @@ export class PanelCtrl {
     this.events = new Emitter();
     this.timing = {};
     this.showSeries = false;
-    this.seriesValues = '30,14,7,4,3,2,1,0';
+    this.seriesValues = '30,14,7,4,3,2,1';
 
     var plugin = config.panels[this.panel.type];
     if (plugin) {
@@ -251,32 +251,29 @@ export class PanelCtrl {
   }
 
   seriesPanel(){
+    var dragObject = this.dashboard.getPanelInfoById(this.panel.id);
     var series = this.seriesValues.split(',');
+    var title = this.panel.title;
+    var timeShift = this.panel.timeShift;
     for ( var i in series ){
-        //if (parseInt(i) === 0){
-        //this.panel.timeShift = series[i]+'d';
-        //this.panel.title = '';
-        //console.log('let rendering begin.');
-        //console.log(this.panel);
-        //this.render();
-        //this.$timeout(() => {
-        //  this.$scope.$root.$broadcast('render');
-        //});
-      //}else{
-        var newPanel = this.panel;
-        if (parseInt(series[i]) === 0){
-          newPanel.timeShift = null;
-          newPanel.title = 'Current';
-        }else{
-          newPanel.timeShift = series[i]+'d';
-          newPanel.title = '';
-        }
-        this.dashboard.duplicatePanel(newPanel, this.row);
-        this.$timeout(() => {
-          this.$scope.$root.$broadcast('render');
-        });
-      //}
+      var newPanel = this.panel;
+      if (parseInt(series[i]) === 0){
+        newPanel.timeShift = null;
+        newPanel.title = 'Current';
+      }else{
+        newPanel.timeShift = series[i]+'d';
+        newPanel.title = '';
+      }
+      this.dashboard.duplicatePanel(newPanel, this.row);
     }
+    this.panel.id = this.dashboard.getNextPanelId();
+    this.panel.title = title;
+    this.panel.timeShift = timeShift;
+    this.$timeout(() => {
+      this.$scope.$root.$broadcast('render');
+    });
+    this.row.panels.splice(parseInt(this.row.panels.length) - 1, 0, this.row.panels.splice(dragObject.index, 1)[0]);
+
   }
 
   getInfoMode() {
