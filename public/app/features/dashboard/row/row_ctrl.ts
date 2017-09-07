@@ -109,7 +109,7 @@ export class DashRowCtrl {
       delete newPanel.scopedVars;
       delete newPanel.alert;
       newRow.addPanel(newPanel);
-    };
+    }
     var rowsList = this.dashboard.rows;
     var rowIndex = _.indexOf(rowsList, this.row);
     var newRowIndex = _.indexOf(rowsList, newRow);
