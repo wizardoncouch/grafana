@@ -99,8 +99,8 @@ export class DashRowCtrl {
     var newRow = new DashboardRow(defaults);
     this.dashboard.rows.push(newRow);
     for ( var i in this.row.panels ) {
-      var panel = this.row.panels[i];
-      var newPanel = angular.copy(panel);
+      var npanel = this.row.panels[i];
+      var newPanel = angular.copy(npanel);
       newPanel.id = this.dashboard.getNextPanelId();
 
       delete newPanel.repeat;
