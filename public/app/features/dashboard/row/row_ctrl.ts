@@ -69,8 +69,8 @@ export class DashRowCtrl {
       }
       var newPanelId = max + 1;
       for ( var cnt in this.row.panels ) {
-        var panel = this.row.panels[cnt];
-        var newPanel = angular.copy(panel);
+        var dnpanel = this.row.panels[cnt];
+        var newPanel = angular.copy(dnpanel);
         newPanel.id = newPanelId;
         delete newPanel.repeat;
         delete newPanel.repeatIteration;
